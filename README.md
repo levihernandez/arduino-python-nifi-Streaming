@@ -1,6 +1,12 @@
 # arduino-python-nifi-Streaming
 Stream data from Arduino sensor to NiFi
 
+> Manually publish "iot" topic in Mosquitto
+
+```bash
+pi@raspberrypi:~/Documents $ mosquitto_pub -h localhost -t "test/message" -m "{\"sensor\":\"iot\",\"c\":31,\"f\":88,\"humidity\":38}"
+```
+
 ```bash
 pi@raspberrypi:~/Documents $ sudo systemctl daemon-reload
 
@@ -28,4 +34,14 @@ Apr 08 12:51:52 raspberrypi systemd[1]: Started PyDuino Service.
 pi@raspberrypi:~/Documents $ ps -eaf | grep mqtt
 root      7116     1  2 12:51 ?        00:00:00 /usr/bin/python3 /home/pi/Documents/mqtt_pub.py localhost 1883 topic/iot
 pi        7134  4518  0 12:52 pts/0    00:00:00 grep --color=auto mqtt
+```
+
+> Subscribe to Mosquitto's "iot" topic
+
+```bash
+pi@raspberrypi:~/Documents $ mosquitto_sub -h localhost -t topic/iot -v
+topic/iot {"sensor":"iot","c":31,"f":88,"humidity":38}
+topic/iot {"sensor":"iot","c":31,"f":88,"humidity":38}
+topic/iot {"sensor":"iot","c":31,"f":88,"humidity":38}
+topic/iot {"sensor":"iot","c":31,"f":88,"humidity":38}
 ```
