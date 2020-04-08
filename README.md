@@ -1,11 +1,15 @@
 # arduino-python-nifi-Streaming
 Stream data from Arduino sensor to NiFi
 
-> Manually publish "iot" topic in Mosquitto
+> Manually publish "iot" topic in Mosquitto with mosquitto_pub or mqtt_pub.py custom script
 
 ```bash
-pi@raspberrypi:~/Documents $ mosquitto_pub -h localhost -t "test/message" -m "{\"sensor\":\"iot\",\"c\":31,\"f\":88,\"humidity\":38}"
+pi@raspberrypi:~/Documents $ mosquitto_pub -h localhost -t "topic/iot" -m "{\"sensor\":\"iot\",\"c\":31,\"f\":88,\"humidity\":38}"
+
+pi@raspberrypi:~/Documents $ python3 mqtt_pub.py localhost 1883 "topic/iot"
 ```
+
+> Create service daemon for the python script
 
 ```bash
 pi@raspberrypi:~/Documents $ sudo systemctl daemon-reload
@@ -36,7 +40,7 @@ root      7116     1  2 12:51 ?        00:00:00 /usr/bin/python3 /home/pi/Docume
 pi        7134  4518  0 12:52 pts/0    00:00:00 grep --color=auto mqtt
 ```
 
-> Subscribe to Mosquitto's "iot" topic
+> Subscribe to Mosquitto's "iot" topic with mosquitto_sub or custom mqtt_sub.py script
 
 ```bash
 pi@raspberrypi:~/Documents $ mosquitto_sub -h localhost -t topic/iot -v
@@ -44,4 +48,6 @@ topic/iot {"sensor":"iot","c":31,"f":88,"humidity":38}
 topic/iot {"sensor":"iot","c":31,"f":88,"humidity":38}
 topic/iot {"sensor":"iot","c":31,"f":88,"humidity":38}
 topic/iot {"sensor":"iot","c":31,"f":88,"humidity":38}
+
+pi@raspberrypi:~/Documents $ python3 mqtt_sub.py localhost 1883 topic/iot
 ```
