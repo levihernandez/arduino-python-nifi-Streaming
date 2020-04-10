@@ -264,6 +264,7 @@ pi@raspberrypi:~
 
 ## Ubuntu server
 
+* `IP: 192.168.86.188`
 * Configure Ubuntu Server
 
 ```bash
