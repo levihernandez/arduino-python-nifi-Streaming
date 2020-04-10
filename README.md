@@ -3,7 +3,6 @@
 Stream data from Arduino sensor to NiFi
 
 ## PyDuino Project
-
 * Arduino
 	* Connect Temperature/Humidity sensor to Arduino
 	* Flash Arduino code
@@ -58,6 +57,19 @@ Linux raspberrypi 4.19.97-v7+ #1294 SMP Thu Jan 30 13:15:58 GMT 2020 armv7l
 Last login: Mon Mar 23 16:07:42 2020
 
 pi@raspberrypi:~ $ cd Documents/
+```
+
+Note: in the event of ssh not working, install the ssh service `sudo apt-get install openssh-server`
+
+* Install OpenJDK
+
+```bash
+pi@raspberrypi:~ sudo apt install openjdk-8-jdk
+
+pi@raspberrypi:~ java -version
+openjdk version "1.8.0_212"
+OpenJDK Runtime Environment (build 1.8.0_212-8u212-b01-1+rpi1-b01)
+OpenJDK Client VM (build 25.212-b01, mixed mode)
 ```
 
 * Download Mosquitto
@@ -125,6 +137,11 @@ Processing triggers for systemd (241-7~deb10u3+rpi1) ...
 Processing triggers for man-db (2.8.5-2) ...
 Processing triggers for libc-bin (2.28-10+rpi1) ...
 
+pi@pi:~/Documents $ mosquitto -v
+1586481407: mosquitto version 1.5.7 starting
+1586481407: Using default config.
+1586481407: Opening ipv4 listen socket on port 1883.
+1586481407: Error: Address already in use
 
 pi@raspberrypi:~/Documents $ systemctl status mosquitto
            mosquitto.service - Mosquitto MQTT v3.1/v3.1.1 Broker
@@ -173,7 +190,7 @@ Processing triggers for man-db (2.8.5-2) ...
 Processing triggers for libc-bin (2.28-10+rpi1) ...
 ```
 
-*Manually publish "iot" topic in Mosquitto with mosquitto_pub or mqtt_pub.py custom script, I followed the example from [Ingest & publish to MQTT](https://www.ev3dev.org/docs/tutorials/sending-and-receiving-messages-with-mqtt/) to build the python scripts.
+* Manually publish "iot" topic in Mosquitto with mosquitto_pub or mqtt_pub.py custom script, I followed the example from [Ingest & publish to MQTT](https://www.ev3dev.org/docs/tutorials/sending-and-receiving-messages-with-mqtt/) to build the python scripts.
 
 ```bash
 pi@raspberrypi:~/Documents $ mosquitto_pub -h localhost -t "topic/iot" -m "{\"sensor\":\"iot\",\"c\":31,\"f\":88,\"humidity\":38}"
@@ -194,7 +211,7 @@ topic/iot {"sensor":"iot","c":31,"f":88,"humidity":38}
 pi@raspberrypi:~/Documents $ python3 mqtt_sub.py localhost 1883 topic/iot
 ```
 
-## Create Daemon Service for Python3 Script
+### Create Daemon Service for Python3 Script
 
 In the event of rebooting the Raspberry Pi 3 or power failure, register the script as a Daemon service to enable restart on boot.
 
@@ -238,5 +255,175 @@ pi        7134  4518  0 12:52 pts/0    00:00:00 grep --color=auto mqtt
 ```
 
 * Configure ports for inbound requests
+
+```bash
+pi@raspberrypi:~ sudo apt-get install ufw
+pi@raspberrypi:~ sudo ufw allow 1883
+pi@raspberrypi:~ 
+```
+
+## Ubuntu server
+
+* Configure Ubuntu Server
+
+```bash
+jlhernandez@Levis ~ % ssh jlhernandez@ubuntu1804.local
+Last login: Thu Apr  9 19:12:05 2020 from 192.168.86.189
+
+jlhernandez@Ubuntu1804:~$ cd Documents/server
+jlhernandez@Ubuntu1804:~$ sudo apt-get update
+jlhernandez@Ubuntu1804:~$ sudo apt install openssh-server
+
+jlhernandez@Ubuntu1804:~$ python3 --version
+Python 3.6.9
+```
+
+	* Install pip3
+
+```bash
+jlhernandez@Ubuntu1804:~$ sudo apt install python3-pip
+[sudo] password for jlhernandez: 
+Reading package lists... Done
+Building dependency tree       
+Reading state information... Done
+The following packages were automatically installed and are no longer required:
+
+jlhernandez@Ubuntu1804:~$ pip3 --version
+pip 9.0.1 from /usr/lib/python3/dist-packages (python 3.6)
+```
+
+	* Install OpenJDK8
+
+```bash
+jlhernandez@Ubuntu1804:~$ sudo apt install openjdk-8-jre-headless
+jlhernandez@Ubuntu1804:~$ java -version
+openjdk version "1.8.0_242"
+OpenJDK Runtime Environment (build 1.8.0_242-8u242-b08-0ubuntu3~18.04-b08)
+OpenJDK 64-Bit Server VM (build 25.242-b08, mixed mode)
+```
+	* Disable Ubuntu GUI to preserve memory
+	
+```bash
+jlhernandez@Ubuntu1804:~$ sudo systemctl set-default multi-user.target
+jlhernandez@Ubuntu1804:~$ sudo reboot now
+```
+
+	* Open ports for NiFi, Flink, Airflow
+	
+```bash
+# NiFi
+jlhernandez@Ubuntu1804:~$ sudo ufw allow 8080
+# Flink
+jlhernandez@Ubuntu1804:~$ sudo ufw allow 8081
+# Airflow
+jlhernandez@Ubuntu1804:~$ sudo ufw allow 8082
+```
+
+* Apache NiFi `http://192.168.86.188:8080/nifi/`
+
+```bash
+jlhernandez@Ubuntu1804:~$ wget https://www.apache.org/dyn/closer.lua?path=/nifi/1.11.4/nifi-1.11.4-bin.tar.gz
+jlhernandez@Ubuntu1804:~$ tar -xvf nifi-1.11.4-bin.tar.gz
+jlhernandez@Ubuntu1804:~$ cd nifi-1.11.4
+jlhernandez@Ubuntu1804:~$ bin/nifi.sh install
+jlhernandez@Ubuntu1804:~$ sudo service nifi start
+jlhernandez@Ubuntu1804:~$ sudo service nifi status
+[sudo] password for jlhernandez: 
+Warning: The unit file, source configuration file or drop-ins of nifi.service changed on disk. Run 'systemctl daemon-reload' to reload units.
+● nifi.service - SYSV: Apache NiFi is a dataflow system based on the principles of Flow-Based Programming.
+   Loaded: loaded (/etc/init.d/nifi; generated)
+   Active: active (running) since Thu 2020-04-09 18:32:34 EDT; 2h 59min ago
+     Docs: man:systemd-sysv-generator(8)
+    Tasks: 117 (limit: 4915)
+   CGroup: /system.slice/nifi.service
+           ├─ 953 /bin/sh /home/jlhernandez/Documents/server/nifi/bin/nifi.sh start
+           ├─ 955 /usr/bin/java -cp /home/jlhernandez/Documents/server/nifi/conf:/home/jlhernandez/Documents/server/nifi/lib/bootstrap/* -Xms12m -Xmx24m -Dorg.apache.nifi.b
+           └─1190 java -classpath /home/jlhernandez/Documents/server/nifi/./conf:/home/jlhernandez/Documents/server/nifi/./lib/nifi-nar-utils-1.9.0.1.0.0.0-90.jar:/home/jlh
+
+Apr 09 18:32:29 Ubuntu1804 systemd[1]: Starting SYSV: Apache NiFi is a dataflow system based on the principles of Flow-Based Programming....
+Apr 09 18:32:30 Ubuntu1804 nifi[903]: nifi.sh: JAVA_HOME not set; results may vary
+Apr 09 18:32:31 Ubuntu1804 nifi[903]: Java home:
+Apr 09 18:32:31 Ubuntu1804 nifi[903]: NiFi home: /home/jlhernandez/Documents/server/nifi
+Apr 09 18:32:31 Ubuntu1804 nifi[903]: Bootstrap Config File: /home/jlhernandez/Documents/server/nifi/conf/bootstrap.conf
+Apr 09 18:32:34 Ubuntu1804 systemd[1]: Started SYSV: Apache NiFi is a dataflow system based on the principles of Flow-Based Programming..
+```
+
+* Apache Flink: `http://192.168.86.188:8081/#/overview`
+
+```bash
+jlhernandez@Ubuntu1804:~$ wget https://mirrors.sonic.net/apache/flink/flink-1.10.0/flink-1.10.0-bin-scala_2.12.tgz
+jlhernandez@Ubuntu1804:~$ tar -xvf flink-1.10.0-bin-scala_2.12.tgz
+jlhernandez@Ubuntu1804:~$ cd flink-1.10.0/
+jlhernandez@Ubuntu1804:~$ bin/start-cluster.sh
+```
+
+* Apache Airflow: 
+
+```bash
+jlhernandez@Ubuntu1804:~$ pip3 install apache-airflow
+Collecting apache-airflow
+
+jlhernandez@Ubuntu1804:~$ pip3 install mysqlclient
+jlhernandez@Ubuntu1804:~$ 
+```
+
+## NiFi subscription to Mosquitto
+
+* In Mosquitto, chek the log to see if NiFi has connected to subscribe
+
+```bash
+pi@raspberrypi:~/Documents $ sudo tail -f /var/log/mosquitto/mosquitto.log
+1585412250: Saving in-memory database to /var/lib/mosquitto/mosquitto.db.
+1585414051: Saving in-memory database to /var/lib/mosquitto/mosquitto.db.
+1585415852: Saving in-memory database to /var/lib/mosquitto/mosquitto.db.
+1585416420: Socket error on client 51663694-d816-48bd-9d33-a28e521fad66, disconnecting.
+1585416420: mosquitto version 1.5.7 terminating
+1585416441: mosquitto version 1.5.7 starting
+1585416441: Config loaded from /etc/mosquitto/mosquitto.conf.
+1585416441: Opening ipv4 listen socket on port 1883.
+1585416441: Opening ipv6 listen socket on port 1883.
+```
+
+* NiFi connected to Raspberry Pi
+
+> Mosquitto log shows a new connection on port `1883` from NiFi with IP `192.168.86.188` and starts consuming the topic
+
+`1585418002: New connection from 192.168.86.188 on port 1883.`
+
+```bash
+pi@raspberrypi:~/Documents $ sudo tail -f /var/log/mosquitto/mosquitto.log
+1585416420: mosquitto version 1.5.7 terminating
+1585416441: mosquitto version 1.5.7 starting
+1585416441: Config loaded from /etc/mosquitto/mosquitto.conf.
+1585416441: Opening ipv4 listen socket on port 1883.
+1585416441: Opening ipv6 listen socket on port 1883.
+1585418002: New connection from 192.168.86.188 on port 1883.
+1585418002: New client connected from 192.168.86.188 as raspberry (c1, k60).
+```
+
+* On the NiFi server, use the  [PyDuino Workflow](code/NiFi/PyDuino.xml) route the PutFile processor to the NiFi /tmp/nifi dir, lets see the contents from the file flow
+
+Files are now being stored in the file system temp directory.`
+
+```bash
+jlhernandez@Ubuntu1804:~/Documents/server$ ls -l /tmp/nifi/ | more
+total 456
+-rw-r--r-- 1 jlhernandez jlhernandez 44 Mar 28 13:58 0242618d-a055-45bf-a4e6-a5235cf20919
+-rw-r--r-- 1 jlhernandez jlhernandez 44 Mar 28 13:58 0265a807-be12-446d-af0f-8a2080a1fe66
+-rw-r--r-- 1 jlhernandez jlhernandez 44 Mar 28 13:58 0282d003-beae-43bc-b61a-1fa9c318e3b4
+-rw-r--r-- 1 jlhernandez jlhernandez 44 Mar 28 13:58 073e8496-f508-4b44-8823-02881a9212f7
+-rw-r--r-- 1 jlhernandez jlhernandez 44 Mar 28 13:59 085dde10-8542-4877-a529-9940d365c73b
+```
+
+* Preview the contents of the NiFi PutFile stored in `/tmp/nifi/` dir
+
+The content of each file corresponds to a single output coming from the sensor.
+
+```bash
+jlhernandez@Ubuntu1804:~/Documents/server$ cat /tmp/nifi/0242618d-a055-45bf-a4e6-a5235cf20919
+{"sensor":"iot","c":30,"f":86,"humidity":35}
+```
+
+## Install MySQL Server
 
 
