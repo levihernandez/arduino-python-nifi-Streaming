@@ -1,6 +1,6 @@
 # arduino-python-nifi-Streaming
 
-Stream data from Arduino sensor to NiFi
+Connect an Arduino sensor to Raspberry Pi3 and capture data from the serial port with a python script. Publish the data to Mosquitto. On a separate server, Install NiFi, Flink, Airflow to stream data, manage script completion, and route records to temp dir.
 
 ## PyDuino Project
 * Arduino
