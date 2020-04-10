@@ -5,6 +5,7 @@
 ```bash
 jlhernandez@Ubuntu1804:~$ sudo su -
 [sudo] password for jlhernandez: 
+
 root@Ubuntu1804:~# passwd
 Enter new UNIX password: 
 Retype new UNIX password: 
